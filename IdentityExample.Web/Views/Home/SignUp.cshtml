@@ -1,7 +1,47 @@
-﻿
-@{
+﻿@{
     ViewData["Title"] = "SignUp";
 }
+@model SignUpViewModel
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1>SignUp</h1>
 
-<h1>SignUp</h1>
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-info" role="alert">
+                @TempData["SuccessMessage"]
+            </div>
+        }
 
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+        <form asp-controller="Home" asp-action="SignUp" method="post">
+            <div class="mb-3">
+                <label class="form-label" asp-for="UserName"></label>
+                <input type="text" class="form-control" asp-for="UserName">
+                <span class="text-danger" asp-validation-for="UserName"></span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" asp-for="Email"></label>
+                <input type="email" class="form-control" asp-for="Email">
+                <span class="text-danger" asp-validation-for="Email"></span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" asp-for="PhoneNumber"></label>
+                <input type="tel" class="form-control" asp-for="PhoneNumber">
+                <span class="text-danger" asp-validation-for="PhoneNumber"></span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" asp-for="Password"></label>
+                <input type="password" class="form-control" asp-for="Password">
+                <span class="text-danger" asp-validation-for="Password"></span>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" asp-for="PasswordConfirm"></label>
+                <input type="password" class="form-control" asp-for="PasswordConfirm">
+                <span class="text-danger" asp-validation-for="PasswordConfirm"></span>
+            </div>
+            <button type="submit" class="btn btn-primary">Kayıt Ol</button>
+        </form>
+    </div>
+</div>
