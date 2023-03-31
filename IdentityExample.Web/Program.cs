@@ -1,6 +1,8 @@
 using IdentityExample.Web.Models;
 using Microsoft.EntityFrameworkCore;
 using IdentityExample.Web.Extensions;
+using IdentityExample.Web.Services;
+using IdentityExample.Web.Settings;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +35,16 @@ builder.Services.Configure<DataProtectionTokenProviderOptions>(config =>
     config.TokenLifespan = TimeSpan.FromHours(2);
 });
 
+// AppSettings.json dosyasýndan class ile veri alma ayarý.
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+
+// security stamp ayarlarýnýn customize edilmesi.
+builder.Services.Configure<SecurityStampValidatorOptions>(config =>
+{
+    config.ValidationInterval = TimeSpan.FromHours(1);
+});
 
 var app = builder.Build();
 

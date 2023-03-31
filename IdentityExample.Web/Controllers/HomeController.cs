@@ -4,6 +4,7 @@ using System.Diagnostics;
 using IdentityExample.Web.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using IdentityExample.Web.Extensions;
+using IdentityExample.Web.Services;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using NuGet.Common;
 
@@ -15,13 +16,16 @@ namespace IdentityExample.Web.Controllers
 
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
+        private readonly IEmailService _emailService;
+
 
         public HomeController(ILogger<HomeController> logger, UserManager<AppUser> userManager,
-            SignInManager<AppUser> signInManager)
+            SignInManager<AppUser> signInManager, IEmailService emailService)
         {
             _logger = logger;
             _userManager = userManager;
             _signInManager = signInManager;
+            _emailService = emailService;
         }
 
         public IActionResult Index()
@@ -136,18 +140,65 @@ namespace IdentityExample.Web.Controllers
             string passwordResetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
 
             var passwordResetLink =
-                Url.Action("ResetPassword", "Home", new { userId = user.Id, Token = passwordResetToken });
+                Url.Action("ResetPassword", "Home", new { userId = user.Id, Token = passwordResetToken },
+                    HttpContext.Request.Scheme);
 
             // email service
+
+            await _emailService.SendResetPasswordEmail(passwordResetLink, user.Email);
 
             TempData["SuccessMessage"] = "Şifre sıfırlama linki email adresinize gönderilmiştir.";
 
             return RedirectToAction("SignIn", "Home");
         }
 
+
         public IActionResult ResetPassword(string userId, string token)
         {
-            throw new NotImplementedException();
+            TempData["userId"] = userId;
+            TempData["token"] = token;
+
+            var user = _userManager.FindByIdAsync((string)userId);
+
+            if (user is null)
+            {
+                ModelState.AddModelError(string.Empty, "Bu email adresine ait kullanıcı bulunamamıştır.");
+                return View();
+            }
+
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel request)
+        {
+            var userId = TempData["userId"];
+            var token = TempData["token"];
+
+            if (userId is null || token is null)
+            {
+                throw new Exception("Hata meydana geldi.");
+            }
+
+            var user = await _userManager.FindByIdAsync((string)userId);
+
+            if (user is null)
+            {
+                ModelState.AddModelError(string.Empty, "Bu email adresine ait kullanıcı bulunamamıştır.");
+                return View();
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, (string)token, request.Password);
+
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = "Şifreniz başarıyla yenilenmiştir.";
+                return RedirectToAction("SignIn", "Home");
+            }
+
+            ModelState.AddModelErrors(result.Errors.Select(x=> x.Description).ToList());
+
+            return View();
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
