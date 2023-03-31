@@ -1,6 +1,7 @@
 using IdentityExample.Web.Models;
 using Microsoft.EntityFrameworkCore;
 using IdentityExample.Web.Extensions;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,13 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie = cookieBuilder;
     options.ExpireTimeSpan = TimeSpan.FromDays(60);
     options.SlidingExpiration = true;
+});
+
+
+// Password reset için token süresi ayarlamasý.
+builder.Services.Configure<DataProtectionTokenProviderOptions>(config =>
+{
+    config.TokenLifespan = TimeSpan.FromHours(2);
 });
 
 

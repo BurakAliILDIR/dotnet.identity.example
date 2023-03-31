@@ -1,6 +1,7 @@
 ﻿using IdentityExample.Web.Localizations;
 using IdentityExample.Web.Models;
 using IdentityExample.Web.Rules;
+using Microsoft.AspNetCore.Identity;
 
 namespace IdentityExample.Web.Extensions
 {
@@ -22,7 +23,8 @@ namespace IdentityExample.Web.Extensions
                 .AddPasswordValidator<PasswordRule>()
                 .AddUserValidator<UserRule>()
                 .AddErrorDescriber<IdentityErrorDescriberLocalize>()
-                .AddEntityFrameworkStores<AppDbContext>();
+                .AddEntityFrameworkStores<AppDbContext>()
+                .AddDefaultTokenProviders();
         }
     }
 }

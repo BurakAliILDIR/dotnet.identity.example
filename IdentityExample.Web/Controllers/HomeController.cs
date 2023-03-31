@@ -5,6 +5,7 @@ using IdentityExample.Web.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using IdentityExample.Web.Extensions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using NuGet.Common;
 
 namespace IdentityExample.Web.Controllers
 {
@@ -112,7 +113,42 @@ namespace IdentityExample.Web.Controllers
 
             return View();
         }
-        
+
+
+        public IActionResult ForgetPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ForgetPassword(ForgetPasswordViewModel request)
+        {
+            // https://localhost:7067
+
+            var user = await _userManager.FindByEmailAsync(request.Email);
+
+            if (user is null)
+            {
+                ModelState.AddModelError(string.Empty, "Bu email adresine ait kullanıcı bulunamamıştır.");
+                return View();
+            }
+
+            string passwordResetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            var passwordResetLink =
+                Url.Action("ResetPassword", "Home", new { userId = user.Id, Token = passwordResetToken });
+
+            // email service
+
+            TempData["SuccessMessage"] = "Şifre sıfırlama linki email adresinize gönderilmiştir.";
+
+            return RedirectToAction("SignIn", "Home");
+        }
+
+        public IActionResult ResetPassword(string userId, string token)
+        {
+            throw new NotImplementedException();
+        }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
