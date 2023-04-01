@@ -1,8 +1,13 @@
-﻿using IdentityExample.Web.Models;
+﻿using IdentityExample.Web.Extensions;
+using IdentityExample.Web.Models;
 using IdentityExample.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.FileProviders;
 
 namespace IdentityExample.Web.Controllers
 {
@@ -11,11 +16,14 @@ namespace IdentityExample.Web.Controllers
     {
         private readonly SignInManager<AppUser> _signInManager;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IFileProvider _fileProvider;
 
-        public MemberController(SignInManager<AppUser> signInManager, UserManager<AppUser> userManager)
+        public MemberController(SignInManager<AppUser> signInManager, UserManager<AppUser> userManager,
+            IFileProvider fileProvider)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _fileProvider = fileProvider;
         }
 
         public async Task<ActionResult> IndexAsync()
@@ -27,6 +35,7 @@ namespace IdentityExample.Web.Controllers
                 UserName = currentUser.UserName,
                 Email = currentUser.Email,
                 PhoneNumber = currentUser.PhoneNumber,
+                PictureUrl = currentUser.Picture
             };
             return View(userViewModel);
         }
@@ -71,6 +80,78 @@ namespace IdentityExample.Web.Controllers
         public async Task Logout()
         {
             await _signInManager.SignOutAsync();
+        }
+
+
+        public async Task<IActionResult> UserEdit()
+        {
+            ViewBag.genders = new SelectList(Enum.GetNames(typeof(Gender)));
+
+            var user = await _userManager.FindByNameAsync(User.Identity.Name);
+
+            var userEditViewModel = new UserEditViewModel()
+            {
+                UserName = user.UserName,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                BirthDate = user.BirthDate,
+                City = user.City,
+                Gender = user.Gender,
+            };
+
+
+            return View(userEditViewModel);
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> UserEdit(UserEditViewModel request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return RedirectToAction("UserEdit", "Member");
+            }
+
+            var user = await _userManager.FindByNameAsync(User.Identity.Name);
+
+            user.UserName = request.UserName;
+            user.Email = request.Email;
+            user.PhoneNumber = request.PhoneNumber;
+            user.BirthDate = request.BirthDate;
+            user.City = request.City;
+            user.Gender = request.Gender;
+            user.Gender = request.Gender;
+
+            if (request.Picture is not null && request.Picture.Length > 0)
+            {
+                var wwwrootFolder = _fileProvider.GetDirectoryContents("wwwroot");
+                var randomFilename = Guid.NewGuid() + Path.GetExtension(request.Picture.FileName);
+
+                var newPicturePath = Path.Combine(wwwrootFolder.First(x => x.Name == "pictures").PhysicalPath,
+                    randomFilename);
+
+                using (var stream = new FileStream(newPicturePath, FileMode.Create))
+                {
+                    await request.Picture.CopyToAsync(stream);
+                }
+
+                user.Picture = randomFilename;
+            }
+
+            var updateToUser = await _userManager.UpdateAsync(user);
+
+            if (!updateToUser.Succeeded)
+            {
+                ModelState.AddModelErrors(updateToUser.Errors.Select(x => x.Description).ToList());
+                return View();
+            }
+
+            await _userManager.UpdateSecurityStampAsync(user);
+            await _signInManager.SignOutAsync();
+            await _signInManager.SignInAsync(user, true);
+
+            TempData["SuccessMessage"] = "Bilgileriniz başarıyla güncellendi";
+            return RedirectToAction("UserEdit", "Member");
         }
     }
 }

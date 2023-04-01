@@ -4,6 +4,7 @@ using IdentityExample.Web.Extensions;
 using IdentityExample.Web.Services;
 using IdentityExample.Web.Settings;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,8 @@ builder.Services.Configure<SecurityStampValidatorOptions>(config =>
 {
     config.ValidationInterval = TimeSpan.FromHours(1);
 });
+
+builder.Services.AddSingleton<IFileProvider>(new PhysicalFileProvider(Directory.GetCurrentDirectory()));
 
 var app = builder.Build();
 
