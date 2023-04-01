@@ -31,9 +31,15 @@ namespace IdentityExample.Web.Controllers
             return View(userViewModel);
         }
 
+        public IActionResult PasswordChange()
+        {
+            return View();
+        }
+
         public async Task Logout()
         {
             await _signInManager.SignOutAsync();
         }
+
     }
 }

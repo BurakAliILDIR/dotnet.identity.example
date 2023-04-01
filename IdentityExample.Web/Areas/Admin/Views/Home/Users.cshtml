@@ -1,7 +1,7 @@
 ﻿@{
     ViewData["Title"] = "Users";
 }
-@model List<UserViewModel>
+@model List<AdminViewModel.UserViewModel>
 <h1>Users</h1>
 <div class="row">
     <div class="col-md-12">
@@ -14,7 +14,7 @@
             </tr>
             </thead>
             <tbody>
-            @foreach (UserViewModel item in Model)
+            @foreach (AdminViewModel.UserViewModel item in Model)
             {
                 <tr>
                     <th scope="row">@item.Id</th>
