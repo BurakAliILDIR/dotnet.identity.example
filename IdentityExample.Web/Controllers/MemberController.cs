@@ -167,5 +167,19 @@ namespace IdentityExample.Web.Controllers
             return View(userClaims);
         }
 
+
+        [Authorize(Policy = "AnkaraPolicy")]
+        public IActionResult AnkaraPage()
+        {
+            return View();
+        }
+
+
+        [Authorize(Policy = "ExchangeExpirePolicy")]
+        public IActionResult ExchangePage()
+        {
+            return View();
+        }
+
     }
 }

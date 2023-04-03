@@ -5,6 +5,10 @@ using IdentityExample.Web.Services;
 using IdentityExample.Web.Settings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.FileProviders;
+using IdentityExample.Web.ClaimProvides;
+using IdentityExample.Web.Requirements;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,6 +52,25 @@ builder.Services.Configure<SecurityStampValidatorOptions>(config =>
 });
 
 builder.Services.AddSingleton<IFileProvider>(new PhysicalFileProvider(Directory.GetCurrentDirectory()));
+
+// cookie'ye özel claim ekleme.
+builder.Services.AddScoped<IClaimsTransformation, ClaimProvider>();
+
+// Policy bazlý yetkilendirme için.
+builder.Services.AddScoped<IAuthorizationHandler, ExchangeExpireRequirementHandler>();
+
+// Policy ekleme.
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AnkaraPolicy", policy =>
+    {
+        policy.RequireClaim("city", "ankara", "manisa");
+        policy.RequireAuthenticatedUser();
+        policy.RequireRole("admin");
+    });
+
+    options.AddPolicy("ExchangeExpirePolicy", policy => { policy.AddRequirements(new ExchangeExpireRequired()); });
+});
 
 var app = builder.Build();
 

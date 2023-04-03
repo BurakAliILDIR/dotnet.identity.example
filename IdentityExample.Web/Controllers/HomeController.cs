@@ -1,12 +1,14 @@
 ﻿using IdentityExample.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using System.Security.Claims;
 using IdentityExample.Web.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using IdentityExample.Web.Extensions;
 using IdentityExample.Web.Services;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using NuGet.Common;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace IdentityExample.Web.Controllers
 {
@@ -51,7 +53,7 @@ namespace IdentityExample.Web.Controllers
                 return View();
             }
 
-            var identityResult = await _userManager.CreateAsync(new AppUser()
+            IdentityResult identityResult = await _userManager.CreateAsync(new AppUser()
             {
                 UserName = request.UserName,
                 Email = request.Email,
@@ -62,6 +64,18 @@ namespace IdentityExample.Web.Controllers
 
             if (identityResult.Succeeded)
             {
+                var exchangeExpireClaim = new Claim("ExchangeExpireDate", DateTime.UtcNow.AddDays(10).ToString());
+
+                var user = await _userManager.FindByEmailAsync(request.Email);
+
+                var result = await _userManager.AddClaimAsync(user, exchangeExpireClaim);
+
+                if (!result.Succeeded)
+                {
+                    ModelState.AddModelError(string.Empty, result.Errors.ToString());
+                    return View();
+                }
+
                 TempData["SuccessMessage"] = "Başarıyla kayıt oldunuz.";
 
                 return RedirectToAction(nameof(SignUp));
@@ -83,7 +97,7 @@ namespace IdentityExample.Web.Controllers
         [HttpPost]
         public async Task<IActionResult> SignIn(SignInViewModel request, string? returnUrl = null)
         {
-            returnUrl = returnUrl ?? Url.Action("Index", "Home");
+            returnUrl ??= Url.Action("Index", "Home");
 
             var user = await _userManager.FindByEmailAsync(request.Email);
 
@@ -98,6 +112,14 @@ namespace IdentityExample.Web.Controllers
 
             if (result.Succeeded)
             {
+                if (user.BirthDate.HasValue)
+                {
+                    await _signInManager.SignInWithClaimsAsync(user, true, new List<Claim>
+                    {
+                        new("birthDate", user.BirthDate.ToString())
+                    });
+                }
+
                 return Redirect(returnUrl);
             }
 
@@ -196,7 +218,7 @@ namespace IdentityExample.Web.Controllers
                 return RedirectToAction("SignIn", "Home");
             }
 
-            ModelState.AddModelErrors(result.Errors.Select(x=> x.Description).ToList());
+            ModelState.AddModelErrors(result.Errors.Select(x => x.Description).ToList());
 
             return View();
         }
